@@ -5,7 +5,7 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { execSync } from 'child_process';
 import { logger } from '../../utils/logger.js';
 import {
-  getWorkerServiceAbsolutePath as findWorkerServicePath,
+  getHookScriptAbsolutePath as findWorkerServicePath,
   getBunAbsolutePath as findBunPath,
   getMcpServerAbsolutePath,
 } from './install-paths.js';

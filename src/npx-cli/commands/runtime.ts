@@ -1,7 +1,7 @@
 import { spawnHidden } from '../../shared/spawn.js';
 import { sanitizeEnv } from '../../supervisor/env-sanitizer.js';
 import { existsSync } from 'fs';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { styleText } from 'node:util';
 import { ensureServerEmbedder, getBunPath, hasServerEmbedder } from '../install/setup-runtime.js';
 import { npmPackageRootDirectory } from '../utils/paths.js';
@@ -236,8 +236,13 @@ export function runHookCommand(extraArgs: string[] = []): void {
     process.exit(1);
   }
 
+  // Prefer the thin hook-only bundle shipped beside the worker bundle; an older
+  // installed plugin without it keeps running the worker bundle.
+  const hookServiceScript = join(dirname(workerScript), 'hook-service.cjs');
+  const hookScript = existsSync(hookServiceScript) ? hookServiceScript : workerScript;
+
   const bunPath = resolveBunOrExit();
-  const child = spawnHidden(bunPath, [workerScript, 'hook', ...extraArgs], {
+  const child = spawnHidden(bunPath, [hookScript, 'hook', ...extraArgs], {
     stdio: 'inherit',
     cwd: process.cwd(),
     env: sanitizeEnv(process.env),

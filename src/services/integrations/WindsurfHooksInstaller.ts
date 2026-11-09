@@ -7,7 +7,7 @@ import { getProjectContext } from '../../utils/project-name.js';
 import { getWorkerBaseUrl } from '../../shared/worker-utils.js';
 import { parseJsonWithBom, writeJsonFileAtomic, writeTextFileAtomic } from '../../shared/atomic-json.js';
 import { DATA_DIR } from '../../shared/paths.js';
-import { getBunAbsolutePath as findBunPath, getWorkerServiceAbsolutePath as findWorkerServicePath } from './install-paths.js';
+import { getBunAbsolutePath as findBunPath, getHookScriptAbsolutePath as findWorkerServicePath } from './install-paths.js';
 
 interface WindsurfHookEntry {
   command: string;
@@ -104,6 +104,10 @@ ${context}
   writeTextFileAtomic(rulesFile, content);
 }
 
+// Our entries run worker-service.cjs, or hook-service.cjs once the installer
+// prefers the thin hook bundle.
+const HOOK_SCRIPT_PATTERN = /(?:worker|hook)-service/;
+
 function buildHookCommand(bunPath: string, workerServicePath: string, eventName: string): string {
   const eventToCommand: Record<string, string> = {
     'pre_user_prompt': 'session-init',
@@ -153,7 +157,7 @@ function mergeAndWriteHooksJson(
     };
 
     const existingHooks = (existingConfig.hooks[eventName] ?? []).filter(
-      (hook) => !hook.command.includes('worker-service') || !hook.command.includes('windsurf')
+      (hook) => !HOOK_SCRIPT_PATTERN.test(hook.command) || !hook.command.includes('windsurf')
     );
 
     existingConfig.hooks[eventName] = [...existingHooks, hookEntry];
@@ -318,7 +322,7 @@ function removeClaudeMemHookEntries(): void {
     const eventHooks = config.hooks[eventName] ?? [];
     if (eventHooks.length > 0) {
       config.hooks[eventName] = eventHooks.filter(
-        (hook) => !hook.command.includes('worker-service') || !hook.command.includes('windsurf'),
+        (hook) => !HOOK_SCRIPT_PATTERN.test(hook.command) || !hook.command.includes('windsurf'),
       );
       if (config.hooks[eventName].length === 0) {
         delete config.hooks[eventName];

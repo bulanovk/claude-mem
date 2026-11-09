@@ -18,7 +18,7 @@ import {
 import type { CursorInstallTarget, CursorHooksJson } from './types.js';
 import {
   getMcpServerAbsolutePath,
-  getWorkerServiceAbsolutePath,
+  getHookScriptAbsolutePath,
   getBunAbsolutePath,
 } from './install-paths.js';
 
@@ -123,7 +123,7 @@ export async function installCursorHooks(target: CursorInstallTarget): Promise<n
     return 1;
   }
 
-  const workerServicePath = getWorkerServiceAbsolutePath();
+  const workerServicePath = getHookScriptAbsolutePath();
   if (!workerServicePath) {
     console.error('Could not find worker-service.cjs');
     console.error('   Expected at: ~/.claude/plugins/marketplaces/thedotmack/plugin/scripts/worker-service.cjs');
@@ -222,9 +222,13 @@ function cursorHookCommand(hook: unknown): string | null {
   return typeof command === 'string' ? command.trim() : null;
 }
 
+// The unified hook runs worker-service.cjs, or hook-service.cjs once the
+// installer prefers the thin hook bundle.
+const HOOK_SCRIPT_PATTERN = /(?:worker|hook)-service/;
+
 function isUnifiedClaudeMemCursorHook(hook: unknown): boolean {
   const command = cursorHookCommand(hook);
-  return command !== null && command.includes('worker-service') && command.includes('hook cursor');
+  return command !== null && HOOK_SCRIPT_PATTERN.test(command) && command.includes('hook cursor');
 }
 
 function isLegacyClaudeMemCursorHook(hook: unknown): boolean {

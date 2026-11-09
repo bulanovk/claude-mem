@@ -76,6 +76,20 @@ export function getWorkerServiceAbsolutePath(): string | null {
 }
 
 /**
+ * Absolute path of the script a baked `hook <platform> <event>` command should
+ * run: the thin `hook-service.cjs` when it sits beside `worker-service.cjs`,
+ * otherwise `worker-service.cjs` (an older installed plugin). Null when neither
+ * exists. Only hook commands use this; `start` and other worker commands keep
+ * `getWorkerServiceAbsolutePath()`.
+ */
+export function getHookScriptAbsolutePath(): string | null {
+  const workerPath = getWorkerServiceAbsolutePath();
+  if (!workerPath) return null;
+  const hookServicePath = path.join(path.dirname(workerPath), 'hook-service.cjs');
+  return existsSync(hookServicePath) ? hookServicePath : workerPath;
+}
+
+/**
  * Absolute path to a Bun runtime. Falls back to the bare `bun` name (resolved
  * via PATH at exec time) when no known install location exists.
  */

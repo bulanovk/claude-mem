@@ -45,6 +45,23 @@ describe('hook installed worker resolution (#5464)', () => {
     expect(() => child.emit('close', 7)).toThrow('exit:7');
   });
 
+  it('runs the thin hook-service bundle when the installed plugin ships it', () => {
+    const root = mkdtempSync(join(tmpdir(), 'hook-service-')); roots.push(root);
+    const installed = join(root, 'installed plugin');
+    mkdirSync(join(installed, 'scripts'), { recursive: true });
+    writeFileSync(join(installed, 'scripts', 'worker-service.cjs'), '');
+    writeFileSync(join(installed, 'scripts', 'hook-service.cjs'), '');
+    const spawn = spyOn(spawnModule, 'spawnHidden').mockReturnValue(new EventEmitter() as never);
+    spies.push(spawn,
+      spyOn(workerUtils, 'resolvePluginRoot').mockReturnValue({ root: installed, version: '15.12.0', missingDependencies: [] }),
+      spyOn(setupRuntime, 'getBunPath').mockReturnValue('/test/bun'),
+    );
+    runHookCommand(['cursor', 'session-init']);
+    expect(spawn.mock.calls[0]?.[1]).toEqual([
+      join(installed, 'scripts', 'hook-service.cjs'), 'hook', 'cursor', 'session-init',
+    ]);
+  });
+
   it('refuses a missing installed plugin instead of running the npm copy', () => {
     const spawn = spyOn(spawnModule, 'spawnHidden');
     const error = spyOn(console, 'error').mockImplementation(() => {});
